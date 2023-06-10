@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+
+    <style>
+      .centered {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .top {
+        height: 26em;
+        position: relative;
+      }
+
+      button {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        outline: none;
+        width: 40px;
+        height: 40px;
+        float: left;
+      }
+
+      #audio-player-container {
+        --seek-before-width: 0%;
+        --volume-before-width: 100%;
+        --buffered-width: 0%;
+        position: relative;
+        margin: 100px 2.5% auto 2.5%;
+        width: 500px;
+        height: 132px;
+        background: #fff;
+      }
+
+      p {
+        position: absolute;
+        top: -18px;
+        right: 5%;
+        padding: 0 5px;
+        margin: 0;
+        font-size: 28px;
+        background: #fff;
+      }
+
+      #play-icon {
+        margin: 20px 2.5% 10px 2.5%;
+      }
+
+      path {
+        stroke: #007db5;
+      }
+
+      .time {
+        display: inline-block;
+        width: 37px;
+        text-align: center;
+        font-size: 20px;
+        margin: 28.5px 0 18.5px 0;
+        float: left;
+      }
+
+      output {
+        display: inline-block;
+        width: 32px;
+        text-align: center;
+        font-size: 20px;
+        margin: 10px 2.5% 0 5%;
+        float: left;
+        clear: left;
+      }
+
+      #volume-slider {
+        margin: 10px 2.5%;
+        width: 58%;
+      }
+
+      #volume-slider::-webkit-slider-runnable-track {
+        background: rgba(0, 125, 181, 0.6);
+      }
+
+      #volume-slider::-moz-range-track {
+        background: rgba(0, 125, 181, 0.6);
+      }
+
+      #volume-slider::-ms-fill-upper {
+        background: rgba(0, 125, 181, 0.6);
+      }
+
+      #volume-slider::before {
+        width: var(--volume-before-width);
+      }
+
+      #mute-icon {
+        margin: 0 2.5%;
+      }
+
+      input[type='range'] {
+        position: relative;
+        -webkit-appearance: none;
+        width: 48%;
+        margin: 0;
+        padding: 0;
+        height: 19px;
+        margin: 30px 2.5% 20px 2.5%;
+        float: left;
+        outline: none;
+      }
+
+      input[type='range']::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 3px;
+        cursor: pointer;
+        background: linear-gradient(
+          to right,
+          rgba(0, 125, 181, 0.6) var(--buffered-width),
+          rgba(0, 125, 181, 0.2) var(--buffered-width)
+        );
+      }
+
+      input[type='range']::before {
+        position: absolute;
+        content: '';
+        top: 8px;
+        left: 0;
+        width: var(--seek-before-width);
+        height: 3px;
+        background-color: #007db5;
+        cursor: pointer;
+      }
+
+      input[type='range']::-webkit-slider-thumb {
+        position: relative;
+        -webkit-appearance: none;
+        box-sizing: content-box;
+        border: 1px solid #007db5;
+        height: 15px;
+        width: 15px;
+        border-radius: 50%;
+        background-color: #fff;
+        cursor: pointer;
+        margin: -7px 0 0 0;
+      }
+
+      input[type='range']:active::-webkit-slider-thumb {
+        transform: scale(1.2);
+        background: #007db5;
+      }
+
+      input[type='range']::-moz-range-track {
+        width: 100%;
+        height: 3px;
+        cursor: pointer;
+        background: linear-gradient(
+          to right,
+          rgba(0, 125, 181, 0.6) var(--buffered-width),
+          rgba(0, 125, 181, 0.2) var(--buffered-width)
+        );
+      }
+
+      input[type='range']::-moz-range-progress {
+        background-color: #007db5;
+      }
+
+      input[type='range']::-moz-focus-outer {
+        border: 0;
+      }
+
+      input[type='range']::-moz-range-thumb {
+        box-sizing: content-box;
+        border: 1px solid #007db5;
+        height: 15px;
+        width: 15px;
+        border-radius: 50%;
+        background-color: #fff;
+        cursor: pointer;
+      }
+
+      input[type='range']:active::-moz-range-thumb {
+        transform: scale(1.2);
+        background: #007db5;
+      }
+
+      input[type='range']::-ms-track {
+        width: 100%;
+        height: 3px;
+        cursor: pointer;
+        background: transparent;
+        border: solid transparent;
+        color: transparent;
+      }
+
+      input[type='range']::-ms-fill-lower {
+        background-color: #007db5;
+      }
+
+      input[type='range']::-ms-fill-upper {
+        background: linear-gradient(
+          to right,
+          rgba(0, 125, 181, 0.6) var(--buffered-width),
+          rgba(0, 125, 181, 0.2) var(--buffered-width)
+        );
+      }
+
+      input[type='range']::-ms-thumb {
+        box-sizing: content-box;
+        border: 1px solid #007db5;
+        height: 15px;
+        width: 15px;
+        border-radius: 50%;
+        background-color: #fff;
+        cursor: pointer;
+      }
+
+      input[type='range']:active::-ms-thumb {
+        transform: scale(1.2);
+        background: #007db5;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="top">
+      <div class="centered">
+        <span id="loading-message"></span>
+        <div id="audio-player-container">
+          <button id="play-icon"></button>
+          <span id="current-time" class="time">00:00</span>
+          <input type="range" id="seek-slider" max="100" value="0" />
+          <span id="duration" class="time">00:00</span>
+          <output id="volume-output">100</output>
+          <input type="range" id="volume-slider" max="100" value="100" />
+        </div>
+      </div>
+    </div>
+    <div>
+      <h2>Speaking</h2>
+      <ul id="currently-speaking"></ul>
+      <div class="line"></div>
+    </div>
+    <div>
+      <h2>Users</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Solo</th>
+            <th>Mute</th>
+            <th>Username</th>
+          </tr>
+        </thead>
+        <tbody id="user-list"></tbody>
+      </table>
+    </div>
+  </body>
+  <script>
+    // -- INSERTED CODE --
+    const audioFiles = `[{ AUDIO FILES }]`
+    // -- END OF INSERTED --
+
+    const PLAY_ICONS = {
+      play: '⏵',
+      pause: '⏸',
+      loading: '⏺',
+    };
+
+    const loadingMesageElement = document.getElementById('loading-message');
+    const playIconElement = document.getElementById('play-icon');
+    const currentTimeElement = document.getElementById('current-time');
+    const seekSliderElement = document.getElementById('seek-slider');
+    const durationElement = document.getElementById('duration');
+    const volumeOutputElement = document.getElementById('volume-output');
+    const volumeSliderElement = document.getElementById('volume-slider');
+    const currentlySpeakingElement = document.getElementById('currently-speaking');
+
+    const users = [];
+    const speaking = new Set();
+
+    const timeline = {};
+
+    const mutedUsers = new Set();
+    const soloedUsers = new Set();
+
+    var isPlaying = false;
+
+    var lastTimestamp = 0;
+    var currentTimestamp = 0;
+
+    var lastRun;
+
+    async function init() {
+      var startingFileTimestamp;
+      playIconElement.innerText = PLAY_ICONS.loading;
+      let totalDuration = 0;
+      for (const audioFile of audioFiles) {
+        loadingMesageElement.innerText = `Loading (${audioFiles.indexOf(audioFile) + 1}/${
+          audioFiles.length
+        }) ${audioFile}`;
+        let startTimestamp = parseInt(audioFile.split('-')[0]);
+        if (startTimestamp > 1000000000000) {
+          if (!startingFileTimestamp) startingFileTimestamp = startTimestamp;
+          startTimestamp -= startingFileTimestamp;
+        }
+        let user = audioFile.slice(audioFile.indexOf('-') + 1);
+        user = user.slice(0, user.lastIndexOf('.'));
+        const audioElement = new Audio(`./recordings/${audioFile.replace('#', '%23')}`);
+        audioElement.setAttribute('type', 'video/ogg');
+        audioElement.setAttribute('id', audioFile);
+        audioElement.dataset.user = user;
+
+        document.body.appendChild(audioElement);
+
+        try {
+          await waitForLoad(audioElement);
+        } catch (e) {
+          console.error(e);
+          audioElement.remove();
+          continue;
+        }
+
+        const audioDuration = audioElement.duration;
+        const endTimestamp = startTimestamp + audioDuration;
+
+        const audioObj = {
+          startTimestamp,
+          endTimestamp,
+          user,
+          audioElement,
+          audioDuration,
+        };
+
+        if (timeline[startTimestamp]) timeline[startTimestamp].push(audioObj);
+        else timeline[startTimestamp] = [audioObj];
+
+        if (!users.includes(user)) users.push(user);
+
+        totalDuration = Math.max(totalDuration, endTimestamp);
+      }
+      playIconElement.innerText = PLAY_ICONS.play;
+      playIconElement.addEventListener('click', togglePlay);
+
+      durationElement.innerText = msToTime(totalDuration);
+
+      loadingMesageElement.remove();
+      seekSliderElement.max = totalDuration;
+
+      // Add users to table
+      const userListElement = document.getElementById('user-list');
+
+      for (const usr of users) {
+        const row = document.createElement('tr');
+        const soloCell = document.createElement('td');
+        const muteCell = document.createElement('td');
+        const usernameCell = document.createElement('td');
+
+        const soloCheckbox = document.createElement('input');
+        soloCheckbox.type = 'checkbox';
+        soloCheckbox.checked = false;
+        soloCheckbox.addEventListener('change', () => {
+          if (soloCheckbox.checked) soloedUsers.add(usr);
+          else soloedUsers.delete(usr);
+          updateMuteStates();
+        });
+
+        const muteCheckbox = document.createElement('input');
+        muteCheckbox.type = 'checkbox';
+        muteCheckbox.checked = false;
+        muteCheckbox.addEventListener('change', () => {
+          if (muteCheckbox.checked) mutedUsers.add(usr);
+          else mutedUsers.delete(usr);
+          updateMuteStates();
+        });
+
+        soloCell.appendChild(soloCheckbox);
+        muteCell.appendChild(muteCheckbox);
+        usernameCell.innerText = usr;
+
+        row.appendChild(soloCell);
+        row.appendChild(muteCell);
+        row.appendChild(usernameCell);
+
+        userListElement.appendChild(row);
+      }
+
+      // Add event listeners
+      seekSliderElement.addEventListener('input', () => {
+        pause();
+        lastRun = undefined;
+        const val = parseInt(seekSliderElement.value);
+        lastTimestamp = val;
+        currentTimestamp = val;
+        currentTimeElement.innerText = msToTime(val);
+      });
+
+      volumeSliderElement.addEventListener('input', updateVolume);
+    }
+
+    async function waitForLoad(audio) {
+      return new Promise((resolve, reject) => {
+        audio.addEventListener('loadeddata', resolve);
+        audio.addEventListener('error', reject);
+        audio.load();
+      });
+    }
+
+    function togglePlay() {
+      if (isPlaying) pause();
+      else play();
+    }
+
+    function play() {
+      isPlaying = true;
+      playIconElement.innerText = PLAY_ICONS.pause;
+      playAudio();
+    }
+
+    function pause() {
+      currentlySpeakingElement.innerHTML = '';
+      speaking.clear();
+      isPlaying = false;
+      playIconElement.innerText = PLAY_ICONS.play;
+      pauseAudio();
+    }
+
+    function playAudio() {
+      pauseAudio();
+      playElementsAtTime(currentTimestamp);
+      requestAnimationFrame(playingLoop);
+    }
+
+    function playingLoop() {
+      if (!isPlaying) return;
+      currentlySpeakingElement.innerHTML = '';
+      for (const usr of speaking) {
+        const li = document.createElement('li');
+        li.innerText = usr;
+        currentlySpeakingElement.appendChild(li);
+      }
+      currentTimestamp += Date.now() - (lastRun ?? Date.now());
+      const elementsToPlay = getAudioBetweenTimestamps(lastTimestamp, currentTimestamp);
+      for (const audioObj of elementsToPlay) {
+        if (!audioObj.audioElement.paused) continue;
+        if (mutedUsers.has(audioObj.user)) continue;
+        if (soloedUsers.size > 0 && !soloedUsers.has(audioObj.user)) continue;
+        const offset = currentTimestamp - audioObj.startTimestamp;
+        if (offset < audioObj.audioDuration) audioObj.audioElement.currentTime = offset;
+        audioObj.audioElement.play();
+
+        speaking.add(audioObj.user);
+        setTimeout(() => {
+          if (speaking.has(audioObj.user)) speaking.delete(audioObj.user);
+        }, audioObj.audioDuration * 1000);
+      }
+      lastRun = Date.now();
+      lastTimestamp = currentTimestamp;
+      currentTimeElement.innerText = msToTime(currentTimestamp);
+      seekSliderElement.value = currentTimestamp;
+      requestAnimationFrame(playingLoop);
+    }
+
+    function pauseAudio() {
+      for (const audioElement of document.querySelectorAll('audio')) {
+        audioElement.currentTime = 0;
+        audioElement.pause();
+      }
+    }
+
+    function getAudioBetweenTimestamps(timestamp, timestamp2) {
+      const elementsToPlay = [];
+      for (const startTimestamp in timeline) {
+        if (startTimestamp >= timestamp && startTimestamp < timestamp2) {
+          for (const audioObj of timeline[startTimestamp]) {
+            elementsToPlay.push(audioObj);
+          }
+        }
+      }
+      return elementsToPlay;
+    }
+
+    function playElementsAtTime(timestamp) {
+      const elementsToPlay = findAllElementsToPlay(timestamp);
+      for (const audioObj of elementsToPlay) {
+        const offset = timestamp - audioObj.startTimestamp;
+        audioObj.audioElement.currentTime = offset;
+        audioObj.audioElement.play();
+      }
+    }
+
+    function findAllElementsToPlay(timestamp) {
+      const elementsToPlay = [];
+      for (const startTimestamp in timeline) {
+        if (startTimestamp >= timestamp) {
+          for (const audioObj of timeline[startTimestamp]) {
+            if (audioObj.startTimestamp <= timestamp && audioObj.endTimestamp > timestamp) {
+              elementsToPlay.push(audioObj);
+            }
+          }
+        }
+      }
+      return elementsToPlay;
+    }
+
+    function setVolume(volume) {
+      for (const audioElement of document.querySelectorAll('audio')) {
+        audioElement.volume = volume;
+      }
+    }
+
+    function updateVolume() {
+      const volume = volumeSliderElement.value;
+      volumeOutputElement.innerText = volume;
+      setVolume(parseInt(volume) / 100);
+    }
+
+    function msToTime(duration) {
+      let seconds = Math.floor((duration / 1000) % 60);
+      let minutes = Math.floor((duration / (1000 * 60)) % 60);
+
+      minutes = minutes < 10 ? '0' + minutes : minutes;
+      seconds = seconds < 10 ? '0' + seconds : seconds;
+
+      return minutes + ':' + seconds;
+    }
+
+    function updateMuteStates() {
+      for (const audioElement of document.querySelectorAll('audio')) {
+        const user = audioElement.dataset.user;
+        if (mutedUsers.has(user)) audioElement.muted = true;
+        else if (soloedUsers.size > 0 && !soloedUsers.has(user)) audioElement.muted = true;
+        else audioElement.muted = false;
+      }
+    }
+
+    init();
+  </script>
+</html>
