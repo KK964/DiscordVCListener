@@ -7,6 +7,7 @@ import {
 import type { Guild, GuildChannel } from 'discord.js';
 
 export async function joinChannel(channel: GuildChannel) {
+  if (!channel.guild) return false;
   let connection = getVoiceConnection(channel.guild.id);
   if (connection) return true;
 

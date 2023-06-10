@@ -19,7 +19,6 @@ export async function packageAudioFiles() {
   });
 }
 
-// NOT ASYNC
 export function deleteAudioFiles() {
   const path = './output';
   rmdir(path, { recursive: true }, (err) => {
@@ -27,5 +26,8 @@ export function deleteAudioFiles() {
     console.error(err);
   });
 
-  unlink('./recordings.7z', (err) => {});
+  unlink('./recordings.7z', (err) => {
+    if (!err) return;
+    console.error(err);
+  });
 }

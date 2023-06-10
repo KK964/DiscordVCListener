@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import { GatewayIntentBits } from 'discord-api-types/v10';
-import { Client } from 'discord.js';
+import { Client, GuildMember } from 'discord.js';
 
 import events from 'events';
 import { getCommand, hasCommand, init } from './commands';
@@ -27,8 +27,18 @@ client.on('ready', async () => {
 });
 
 client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isCommand() || !interaction.guildId) return;
-  if (interaction.user.id !== process.env.DISCORD_USER) {
+  if (!interaction.isCommand()) return;
+  if (!interaction.guildId || !interaction.member) {
+    await interaction.reply({
+      ephemeral: true,
+      content: 'You must be in a server to use this bot!',
+    });
+    return;
+  }
+
+  const guildMember = interaction.member as GuildMember;
+
+  if (!guildMember.permissions.has(['BanMembers'], true)) {
     await interaction.reply({ ephemeral: true, content: 'You are not allowed to use this bot!' });
     return;
   }

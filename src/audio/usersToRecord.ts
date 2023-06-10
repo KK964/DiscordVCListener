@@ -18,3 +18,7 @@ export function canRecord(user: User) {
   if (usersToRecord.size === 0) return true;
   return usersToRecord.has(user);
 }
+
+export function getUsers() {
+  return Array.from(usersToRecord);
+}

@@ -6,6 +6,9 @@ import type {
 } from 'discord.js';
 import { recordCommand } from './commands/record';
 import { leaveCommand } from './commands/leave';
+import { listingToCommand } from './commands/listening';
+import { listenCommand } from './commands/listen';
+import { forceLeaveCommand } from './commands/forceLeave';
 
 export type BaseCommand = {
   command: string;
@@ -19,6 +22,9 @@ export async function init(guild: Guild) {
   commands.clear();
   registerCommand(recordCommand);
   registerCommand(leaveCommand);
+  registerCommand(listingToCommand);
+  registerCommand(listenCommand);
+  registerCommand(forceLeaveCommand);
 
   const guildCommands = [];
   for (const command of commands.values()) {

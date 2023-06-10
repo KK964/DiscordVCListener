@@ -10,5 +10,3 @@ export async function mergeAudioFiles() {
   const newHtml = html.replace(CONSTANTS.HTML.AUDIO_FILES_PLACEHOLDER, audioFilesString);
   await writeFile(CONSTANTS.HTML.OUTPUT_PATH, newHtml);
 }
-
-mergeAudioFiles();

@@ -4,6 +4,7 @@ import {
   CommandInteraction,
   GuildChannel,
   GuildMember,
+  PermissionFlagsBits,
   VoiceBasedChannel,
 } from 'discord.js';
 import { joinChannel, leaveChannel } from '../audio/joinChannel';
@@ -48,6 +49,23 @@ export const recordCommand: BaseCommand = {
       | undefined
       | null;
 
+    const speaker = interaction.options.get('speaker', false)?.member as GuildMember | undefined;
+
+    if (speaker) {
+      if (!speaker.voice.channel) {
+        return interaction.followUp({
+          content: 'The speaker must be in a voice channel!',
+          ephemeral: true,
+        });
+      }
+
+      enableRecording(speaker.user);
+
+      if (!channel) {
+        channel = speaker.voice.channel;
+      }
+    }
+
     if (!channel) {
       channel = (member as GuildMember)?.voice.channel;
     }
@@ -66,24 +84,31 @@ export const recordCommand: BaseCommand = {
       });
     }
 
-    const speaker = interaction.options.get('speaker', false)?.member as GuildMember | undefined;
+    if (
+      !channel
+        .permissionsFor(guild.members.me as GuildMember, true)
+        .has(PermissionFlagsBits.Connect, true)
+    ) {
+      return interaction.followUp({
+        content: 'I do not have permission to join that channel!',
+        ephemeral: true,
+      });
+    }
 
-    if (speaker) {
-      if (!speaker.voice.channel) {
-        return interaction.followUp({
-          content: 'The speaker must be in a voice channel!',
-          ephemeral: true,
-        });
-      }
+    if (guild.members.me?.voice?.channel?.id === channel.id) {
+      return interaction.followUp({
+        content: 'Already recording audio in this channel, updating the recorded users!',
+        ephemeral: true,
+      });
+    }
 
-      enableRecording(speaker.user);
-
-      if (guild.members.me?.voice?.channel?.id === channel.id) {
-        return interaction.followUp({
-          content: 'Already recording audio in this channel, updating the recorded users!',
-          ephemeral: true,
-        });
-      }
+    if (
+      !channel.permissionsFor(member as GuildMember, true).has(PermissionFlagsBits.Connect, true)
+    ) {
+      return interaction.followUp({
+        content: 'You do not have permission to join that channel!',
+        ephemeral: true,
+      });
     }
 
     if (guild.members.me?.voice?.channel) {
