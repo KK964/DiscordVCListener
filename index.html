@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Discord Recording Playback</title>
 
     <style>
       .centered {
@@ -294,19 +294,16 @@
 
     var lastRun;
 
+    async function wait(time) {
+      return new Promise((res) => {
+        setTimeout(res, time);
+      });
+    }
+
     async function init() {
-      var startingFileTimestamp;
-      playIconElement.innerText = PLAY_ICONS.loading;
-      let totalDuration = 0;
+      const audioElements = [];
+
       for (const audioFile of audioFiles) {
-        loadingMesageElement.innerText = `Loading (${audioFiles.indexOf(audioFile) + 1}/${
-          audioFiles.length
-        }) ${audioFile}`;
-        let startTimestamp = parseInt(audioFile.split('-')[0]);
-        if (startTimestamp > 1000000000000) {
-          if (!startingFileTimestamp) startingFileTimestamp = startTimestamp;
-          startTimestamp -= startingFileTimestamp;
-        }
         let user = audioFile.slice(audioFile.indexOf('-') + 1);
         user = user.slice(0, user.lastIndexOf('.'));
         const audioElement = new Audio(`./recordings/${audioFile.replace('#', '%23')}`);
@@ -315,11 +312,41 @@
         audioElement.dataset.user = user;
 
         document.body.appendChild(audioElement);
+        audioElements.push(audioElement);
+      }
 
-        try {
-          await waitForLoad(audioElement);
-        } catch (e) {
-          console.error(e);
+      loadingMesageElement.innerText = `Loading ${audioFiles.length} files into cache...`;
+      await Promise.all(audioElements.map(loadElement));
+      loadingMesageElement.innerText = `Loaded files!`;
+
+      await wait(500);
+
+      loadingMesageElement.innerText = `Indexing files...`;
+      var startingFileTimestamp;
+      playIconElement.innerText = PLAY_ICONS.loading;
+      let totalDuration = 0;
+      for (const audioFile of audioFiles) {
+        let startTimestamp = parseInt(audioFile.split('-')[0]);
+        if (startTimestamp > 1000000000000) {
+          if (!startingFileTimestamp) startingFileTimestamp = startTimestamp;
+          startTimestamp -= startingFileTimestamp;
+        }
+        let user = audioFile.slice(audioFile.indexOf('-') + 1);
+        user = user.slice(0, user.lastIndexOf('.'));
+        const audioElement = document.getElementById(`${audioFile}`);
+
+        if (!audioElement) {
+          console.error(`${audioFile} failed to load...`);
+          continue;
+        }
+
+        if (
+          isNaN(startTimestamp) ||
+          isNaN(audioElement.duration) ||
+          !isFinite(startTimestamp) ||
+          !isFinite(audioElement.duration)
+        ) {
+          console.error(`${audioElement.id} has no duration!`);
           audioElement.remove();
           continue;
         }
@@ -342,17 +369,20 @@
 
         totalDuration = Math.max(totalDuration, endTimestamp);
       }
+
+      await wait(500);
+
       playIconElement.innerText = PLAY_ICONS.play;
       playIconElement.addEventListener('click', togglePlay);
 
       durationElement.innerText = msToTime(totalDuration);
 
-      loadingMesageElement.remove();
       seekSliderElement.max = totalDuration;
 
       // Add users to table
       const userListElement = document.getElementById('user-list');
 
+      loadingMesageElement.innerText = `Loading users...`;
       for (const usr of users) {
         const row = document.createElement('tr');
         const soloCell = document.createElement('td');
@@ -399,6 +429,16 @@
       });
 
       volumeSliderElement.addEventListener('input', updateVolume);
+
+      loadingMesageElement.remove();
+    }
+
+    async function loadElement(audioElement) {
+      try {
+        await waitForLoad(audioElement);
+      } catch (e) {
+        audioElement.remove();
+      }
     }
 
     async function waitForLoad(audio) {
